@@ -38,7 +38,7 @@ class TCPClient{
  }
 //Define function to connect to server
 bool TCPClient::connectToServer(const std::string& serverIp, int port){
-    //Zero out the struct
+    //Zero out the struct by using memset to set all memory in the struct to 0
     memset(&server_addr, 0, sizeof(server_addr));
     
     //Fill server address details
@@ -72,5 +72,21 @@ void TCPClient::sendMessage(const std::string& message){
         //Will be handled later also
         fputs("send() sent an unexpected number of bytes",stderr);
     }
+
+}
+
+std::string TCPClient::recieveResponse(){
+    char buffer[BUFSIZ];
+    std::string response = "";
+    ssize_t numBytesRcvd;
+
+    //We want to recieve as many bytes as sent. More robust solution would be developed later
+    if (numBytesRcvd<0){
+        perror("recv() failed");
+    } else {
+        buffer[numBytesRcvd] = '\0';//Null terminate string response
+        response = buffer;
+    }
+    return response;
 
 }
