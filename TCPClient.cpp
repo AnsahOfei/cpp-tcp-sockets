@@ -64,29 +64,60 @@ bool TCPClient::connectToServer(const std::string& serverIp, int port){
 }
 
 void TCPClient::sendMessage(const std::string& message){
+    //TO make sure all bytes are sent and recieved, we will also include the length of the transmission to be sent as well as the message itself
+    uint32_t netMessageLength = htonl(message.length());
     //send() returns the number of bytes sent after it is invoked
-    ssize_t numBytesSent = send(sock_fd,message.c_str(),message.length(),0);
-    if (numBytesSent<0){
-        perror("send() failed");
-    } else if (numBytesSent != message.length()){
-        //Will be handled later also
-        fputs("send() sent an unexpected number of bytes",stderr);
+    ssize_t numBytesSent = send(sock_fd,&netMessageLength,sizeof(netMessageLength),0);
+    if (numBytesSent != sizeof(netMessageLength)){
+        perror("send() failed to send length");
+    }
+    numBytesSent = send(sock_fd,message.c_str(),message.length(),0);
+    if (numBytesSent != message.length()){
+        perror("send() failed to send message");
     }
 
 }
 
 std::string TCPClient::recieveResponse(){
     char buffer[BUFSIZ];
-    std::string response = "";
-    ssize_t numBytesRcvd;
+    std::string response;
+    
+    uint32_t netMessageLength;
+    
 
-    //We want to recieve as many bytes as sent. More robust solution would be developed later
-    if (numBytesRcvd<0){
-        perror("recv() failed");
-    } else {
-        buffer[numBytesRcvd] = '\0';//Null terminate string response
-        response = buffer;
+    //Retrieve message length
+    ssize_t numBytesRcvd = recv(sock_fd,&netMessageLength,sizeof(netMessageLength),0);
+    if (numBytesRcvd != sizeof(netMessageLength)){
+        perror("Did not recieve the complete length prefix.");
     }
+
+    uint32_t messageLength = ntohl(netMessageLength);
+
+    //Use message length to check message retrieved
+    response.resize(messageLength);
+    ssize_t totalBytesRcvd = 0;
+
+    while (totalBytesRcvd < messageLength){
+        numBytesRcvd = recv(sock_fd,&response[totalBytesRcvd],messageLength - totalBytesRcvd,0);
+        if (numBytesRcvd < 0){
+            perror("recv() failed");
+            return "";
+        }
+        if(numBytesRcvd == 0){
+            perror("recv() failed and server connection closed");
+            return "";
+        }
+        totalBytesRcvd+=numBytesRcvd;
+        
+    }
+
+    // //To be replaced 
+    // if (numBytesRcvd<0){
+    //     perror("recv() failed");
+    // } else {
+    //     buffer[numBytesRcvd] = '\0';//Null terminate string response
+    //     response = buffer;
+    // }
     return response;
 
 }
