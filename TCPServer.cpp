@@ -19,12 +19,11 @@ class TCPServer{
 
 TCPServer::TCPServer(int port){
     //incoming connections
-    listening_socket_fd = socket(AF_INET,SOCK_STREAM,IP_PROTOCOL);
+    listening_socket_fd = socket(AF_INET,SOCK_STREAM,IPPROTO_TCP);
     if (listening_socket_fd < 0){
         perror("socket() failed");
         exit(EXIT_FAILURE);        
-    }perror("send() failed");
-
+    }
     //construct local address
     sockaddr_in servAddr;
     memset(&servAddr,0,sizeof(servAddr));
@@ -44,7 +43,7 @@ TCPServer::TCPServer(int port){
         exit(EXIT_FAILURE);
     }
 
-    std::cout << "Server is listening on port" << port << std::endl;
+    std::cout << "Server is listening on port " << port << std::endl;
 }
 
 TCPServer::~TCPServer(){
